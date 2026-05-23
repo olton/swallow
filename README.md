@@ -5,9 +5,10 @@
   # Swallow SDK
   ### Build your agent applications with ease
 
+Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from TypeScript/JavaScript.
+
 </div>
 
-Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from TypeScript/JavaScript.
 
 ## Features
 
