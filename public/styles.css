@@ -1,0 +1,256 @@
+:root {
+  --bg: #10161f;
+  --bg-soft: #171f2b;
+  --card: #0f1420cc;
+  --line: #2d3d53;
+  --text: #f5f7fb;
+  --muted: #b7c1d2;
+  --accent: #4ed6c9;
+  --accent-strong: #2fb5f3;
+  --user: #25344f;
+  --assistant: #162032;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 10%, #2c6f67 0%, transparent 40%),
+    radial-gradient(circle at 85% 5%, #23436f 0%, transparent 38%),
+    linear-gradient(160deg, #0c111a 0%, #131d2a 45%, #0f1824 100%);
+  overflow: hidden;
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite;
+}
+
+.bg-orb-a {
+  width: 320px;
+  height: 320px;
+  background: #2acfc1;
+  top: -80px;
+  right: -60px;
+}
+
+.bg-orb-b {
+  width: 280px;
+  height: 280px;
+  background: #2385ef;
+  bottom: -90px;
+  left: -70px;
+  animation-delay: 2s;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(980px, 96vw);
+  height: min(92vh, 920px);
+  margin: 4vh auto;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  box-shadow: 0 30px 80px #06101f77;
+}
+
+.app-header {
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+h1 {
+  margin: 6px 0 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.1;
+}
+
+.model-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 240px;
+}
+
+.model-panel label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#modelSelect {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.chat-panel {
+  overflow: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.message {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  background: var(--assistant);
+  max-width: min(80ch, 92%);
+  transform: translateY(10px);
+  opacity: 0;
+  animation: reveal 240ms ease forwards;
+}
+
+.message.user {
+  margin-left: auto;
+  background: var(--user);
+}
+
+.message-role {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.message-content {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.composer {
+  border-top: 1px solid var(--line);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+#messageInput {
+  resize: vertical;
+  min-height: 56px;
+  max-height: 220px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+#sendButton {
+  border: none;
+  border-radius: 12px;
+  padding: 0 18px;
+  min-width: 120px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: #082025;
+  background: linear-gradient(130deg, var(--accent), var(--accent-strong));
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+#sendButton:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+#sendButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(20px, -16px) scale(1.06);
+  }
+}
+
+@keyframes reveal {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .model-panel {
+    min-width: 0;
+  }
+
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+  #sendButton {
+    min-height: 44px;
+  }
+}

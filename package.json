@@ -1,0 +1,41 @@
+{
+  "name": "swallow",
+  "version": "1.0.0",
+  "description": "Lightweight Agent SDK for local/remote LLM providers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "demo": "npm run build && node scripts/demo-server.mjs",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/agent-client.test.ts",
+    "test:live": "vitest run tests/ollama.live.test.ts",
+    "test:openai": "vitest run tests/openai-compatible-provider.test.ts",
+    "test:live:openai": "vitest run tests/openai-compatible.live.test.ts",
+    "test:live:lmstudio": "vitest run tests/lmstudio.live.ts",
+    "test:live:all": "vitest run tests/ollama.live.test.ts tests/openai-compatible.live.test.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

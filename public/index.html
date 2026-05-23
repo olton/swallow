@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swallow SDK Demo Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Swallow SDK</p>
+          <h1>Ollama Demo Chat</h1>
+        </div>
+        <div class="model-panel">
+          <label for="modelSelect">Модель</label>
+          <select id="modelSelect" aria-label="Вибір моделі"></select>
+        </div>
+      </header>
+
+      <section id="chat" class="chat-panel" aria-live="polite"></section>
+
+      <form id="chatForm" class="composer" autocomplete="off">
+        <label class="sr-only" for="messageInput">Ваше повідомлення</label>
+        <textarea
+          id="messageInput"
+          rows="2"
+          placeholder="Напишіть запит до локального Ollama..."
+          required
+        ></textarea>
+        <button id="sendButton" type="submit">Надіслати</button>
+      </form>
+    </main>
+
+    <template id="messageTemplate">
+      <article class="message">
+        <header class="message-role"></header>
+        <pre class="message-content"></pre>
+      </article>
+    </template>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
