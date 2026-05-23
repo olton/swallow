@@ -1,6 +1,6 @@
 <div align="center">
 
-  ![Swallow SDK Logo](https://raw.githubusercontent.com/olton/swallow/master/assets/logo-blue.png)
+  ![Swallow SDK Logo](./assets/logo-blue.png)
 
   # Swallow SDK
   ### Build your agent applications with ease
