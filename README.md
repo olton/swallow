@@ -16,6 +16,7 @@ Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from T
 - High-level `AgentClient` facade
 - Built-in `OllamaProvider`
 - Built-in `OpenAiCompatibleProvider`
+- Built-in `AnthropicProvider`
 - Streaming chat support
 - Embeddings and model listing support
 - Tool-calling orchestration (`runWithTools`)
@@ -36,6 +37,7 @@ npm test
 npm run test:unit
 npm run test:live
 npm run test:openai
+npm run test:anthropic
 npm run test:live:openai
 npm run test:live:lmstudio
 npm run test:live:all
@@ -153,8 +155,39 @@ for await (const chunk of client.stream({
 - `AgentClient`
 - `OllamaProvider`
 - `OpenAiCompatibleProvider`
+- `AnthropicProvider`
 - `SdkError`, `ProviderError`, `HttpError`
 - Types: `LlmProvider`, `ChatRequest`, `ChatResponse`, `ChatStreamChunk`, `EmbedRequest`, `EmbedResponse`, `ModelInfo`, `LlmMessage`, `ToolDefinition`, `ToolCall`, `ToolHandler`, `RetryPolicy`, `HttpMiddleware`
+
+## Anthropic Provider
+
+Use `AnthropicProvider` for native Anthropic Messages API.
+
+```ts
+import { Agent, AnthropicProvider } from 'swallow';
+
+const provider = new AnthropicProvider({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  anthropicVersion: '2023-06-01',
+  timeoutMs: 20_000,
+  retry: { maxAttempts: 3, baseDelayMs: 200 },
+});
+
+const agent = new Agent(provider);
+
+const response = await agent.chat({
+  model: 'claude-3-5-sonnet-latest',
+  messages: [{ role: 'user', content: 'Hello from Anthropic' }],
+});
+
+console.log(response.content);
+```
+
+Unit tests for provider mapping:
+
+```bash
+npm run test:anthropic
+```
 
 ## OpenAI-compatible Provider
 

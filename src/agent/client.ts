@@ -12,7 +12,7 @@ import type {
   ToolDefinition,
 } from '../types/types.js';
 import { SdkError } from '../errors/index.js';
-import { validateToolArguments } from './tool-arguments-validator.js';
+import { validateToolArguments } from './tool-validator.js';
 import type { ValidateFunction } from 'ajv';
 
 export class Agent {
@@ -139,3 +139,4 @@ function serializeToolResult(result: unknown): string {
     throw new SdkError('Tool result is not JSON-serializable', { cause: error });
   }
 }
+
