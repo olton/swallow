@@ -3,6 +3,7 @@ export { Agent } from './agent/client.js';
 export { HttpError, ProviderError, SdkError } from './errors/index.js';
 export { OllamaProvider } from './providers/ollama.js';
 export { OpenAiCompatibleProvider } from './providers/openai-compatible.js';
+export { AnthropicProvider } from './providers/anthropic.js';
 export type { HttpMiddleware, HttpMiddlewareContext, RetryPolicy } from './http/client.js';
 export {
   createTelemetryMiddleware,

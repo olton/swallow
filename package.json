@@ -14,6 +14,7 @@
     "test:unit": "vitest run tests/agent-client.test.ts",
     "test:live": "vitest run tests/ollama.live.test.ts",
     "test:openai": "vitest run tests/openai-compatible-provider.test.ts",
+    "test:anthropic": "vitest run tests/anthropic-provider.test.ts",
     "test:live:openai": "vitest run tests/openai-compatible.live.test.ts",
     "test:live:lmstudio": "vitest run tests/lmstudio.live.ts",
     "test:live:all": "vitest run tests/ollama.live.test.ts tests/openai-compatible.live.test.ts",

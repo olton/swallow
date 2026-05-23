@@ -3,6 +3,7 @@
   ![Swallow Logo](./assets/logo-blue.png)
 
   # Swallow SDK
+  ### Build your agent applications with ease
 
 </div>
 
@@ -39,6 +40,40 @@ npm run test:live:lmstudio
 npm run test:live:all
 npm run build
 npm run demo
+```
+
+## Environment Variables
+
+All environment variables used across demo scripts, tests, and provider examples are listed in [.env.example](.env.example).
+
+### Runtime / Demo
+
+- `DEMO_HOST` - Demo server bind host for `npm run demo` (default: `127.0.0.1`)
+- `DEMO_PORT` - Demo server bind port for `npm run demo` (default: `5177`)
+- `OLLAMA_HOST` - Native Ollama API host used by demo and `npm run test:live` (default: `http://localhost:11434`)
+
+### Live Tests
+
+- `OLLAMA_MODEL` - Optional model override for native Ollama live test
+- `OLLAMA_OPENAI_HOST` - OpenAI-compatible endpoint for Ollama live test (default: `http://localhost:11434/v1`)
+- `OLLAMA_OPENAI_MODEL` - Optional model override for OpenAI-compatible Ollama live test
+- `LMSTUDIO_OPENAI_HOST` - OpenAI-compatible endpoint for LM Studio live test (default: `http://localhost:1234/v1`)
+- `LMSTUDIO_OPENAI_MODEL` - Optional model override for LM Studio live test
+
+### Anthropic Provider
+
+- `ANTHROPIC_API_KEY` - API key for `AnthropicProvider`
+- `ANTHROPIC_BASE_URL` - Optional base URL override (default: `https://api.anthropic.com`)
+- `ANTHROPIC_VERSION` - Optional API version header override (provider default: `2023-06-01`)
+
+PowerShell quick setup example:
+
+```bash
+$env:OLLAMA_HOST="http://localhost:11434"
+$env:OLLAMA_MODEL="gemma4:8b"
+$env:OLLAMA_OPENAI_HOST="http://localhost:11434/v1"
+$env:LMSTUDIO_OPENAI_HOST="http://localhost:1234/v1"
+$env:ANTHROPIC_API_KEY="<your-key>"
 ```
 
 ## Public Demo Chat (Ollama)
