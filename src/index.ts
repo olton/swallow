@@ -14,11 +14,9 @@ export { OpenAiProvider } from './providers/openai.js';
 export { AzureOpenAiProvider } from './providers/azure-openai.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 export { GeminiProvider } from './providers/gemini.js';
-export { createProvider } from './providers/factory.js';
+export { createProvider } from './providers/index.js';
 export type { HttpMiddleware, HttpMiddlewareContext, RetryPolicy } from './http/client.js';
-export {
-  createTelemetryMiddleware,
-} from './http/middleware/telemetry.js';
+export { createTelemetryMiddleware } from './http/middleware/telemetry.js';
 export type { TelemetryLogEvent, TelemetryLogger, TelemetryMiddlewareOptions } from './http/middleware/telemetry.js';
 export type {
   ChatRequest,

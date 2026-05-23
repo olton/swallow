@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createProvider } from '../src/providers/factory';
+import { createProvider } from '../src/providers';
 
 describe('createProvider', () => {
   it('creates all supported providers', () => {
