@@ -456,6 +456,196 @@ const result = await client.runWithTools(
 console.log(result.final.content);
 ```
 
+## External MCP Servers (Context7 Example)
+
+You can connect external MCP servers and run them through the same tool loop with `runWithMcpTools(...)`.
+
+```ts
+import { Agent, OpenAIProvider, McpServer } from 'swallow';
+
+const provider = new OpenAIProvider({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const mcp = new McpServer({
+  transport: 'http',
+  // Your MCP HTTP endpoint
+  baseUrl: process.env.MCP_SERVER_URL ?? 'https://your-mcp-server.example.com/mcp',
+  headers: {
+    ...(process.env.MCP_BEARER_TOKEN
+      ? { Authorization: `Bearer ${process.env.MCP_BEARER_TOKEN}` }
+      : {}),
+  },
+});
+
+const agent = new Agent(provider);
+
+const result = await agent.runWithMcpTools(
+  {
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'user',
+        content: 'Find the official docs about Next.js route handlers and summarize in 3 bullets.',
+      },
+    ],
+    toolChoice: 'auto',
+  },
+  mcp
+);
+
+console.log(result.final.content);
+```
+
+How it works:
+
+1. `McpServer` initializes MCP session (`initialize`).
+2. Agent loads MCP tools from `tools/list`.
+3. LLM calls tools as usual.
+4. Agent executes `tools/call` on MCP server.
+5. Tool outputs are fed back into the LLM loop until final answer.
+
+You can mix local handlers with MCP handlers:
+
+```ts
+await agent.runWithMcpTools(
+  {
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'Use local and MCP tools together' }],
+    toolChoice: 'auto',
+  },
+  mcp,
+  {
+    handlers: {
+      localUtility: async () => ({ ok: true }),
+    },
+  }
+);
+```
+
+If your MCP server is configured as command/args (for example in VS Code MCP config), use the same `McpServer` with stdio transport:
+
+```ts
+import { Agent, OpenAIProvider, McpServer } from 'swallow';
+
+const provider = new OpenAIProvider({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const mcp = new McpServer({
+  transport: 'stdio',
+  command: 'npx.cmd',
+  args: ['-y', '@modelcontextprotocol/server-memory'],
+});
+
+const agent = new Agent(provider);
+
+const result = await agent.runWithMcpTools(
+  {
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'Save and read notes from memory MCP' }],
+    toolChoice: 'auto',
+  },
+  mcp
+);
+
+console.log(result.final.content);
+
+// Optional cleanup when you are done with this client instance
+mcp.close();
+```
+
+You can also create MCP server instance directly from MCP-style config using `createMcpServerFromConfig`:
+
+```ts
+import { Agent, OpenAIProvider, createMcpServerFromConfig } from 'swallow';
+
+const provider = new OpenAIProvider({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const mcpConfig = {
+  memory: {
+    command: 'npx.cmd',
+    args: ['-y', '@modelcontextprotocol/server-memory'],
+    autoStart: true,
+  },
+};
+
+const mcp = createMcpServerFromConfig(mcpConfig, 'memory');
+
+const agent = new Agent(provider);
+const result = await agent.runWithMcpTools(
+  {
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'Save note using memory MCP' }],
+    toolChoice: 'auto',
+  },
+  mcp
+);
+
+console.log(result.final.content);
+mcp.close();
+```
+
+Supported config shapes:
+
+- Single server config object
+- Config map + server name (recommended when you have multiple MCP servers)
+- HTTP config (`baseUrl` or `url`)
+- Stdio config (`command`, `args`, optional `cwd`/`env`/`autoStart`)
+
+### Batch Create MCP Servers
+
+You can create several MCP servers at once from object config or from JSON file.
+
+From object:
+
+```ts
+import { createMcpServersFromConfig } from 'swallow';
+
+const servers = createMcpServersFromConfig({
+  mcpServers: {
+    memory: {
+      command: 'npx.cmd',
+      args: ['-y', '@modelcontextprotocol/server-memory'],
+      autoStart: true,
+    },
+    context7: {
+      transport: 'http',
+      baseUrl: 'https://your-context7-mcp.example.com/mcp',
+      headers: {
+        Authorization: 'Bearer <token>',
+      },
+    },
+  },
+});
+
+const memory = servers.memory;
+const context7 = servers.context7;
+```
+
+From JSON file:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "autoStart": true
+    }
+  }
+}
+```
+
+```ts
+import { createMcpServersFromJsonFile } from 'swallow';
+
+const servers = await createMcpServersFromJsonFile('./mcp.config.json');
+const memory = servers.memory;
+```
+
 ## OpenAI-compatible Live Test (local Ollama)
 
 ```bash

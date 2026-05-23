@@ -1,5 +1,12 @@
 export { Agent as AgentClient } from './agent/client.js';
 export { Agent } from './agent/client.js';
+export {
+  McpServer,
+  createMcpServerFromConfig,
+  createMcpServersFromConfig,
+  createMcpServersFromJsonFile,
+  createMcpToolSuite,
+} from './agent/mcp.js';
 export { HttpError, ProviderError, SdkError } from './errors/index.js';
 export { OllamaProvider } from './providers/ollama.js';
 export { OpenAiCompatibleProvider } from './providers/openai-compatible.js';
@@ -34,3 +41,17 @@ export type {
   ToolExecutionContext,
   ToolHandler,
 } from './types/types.js';
+export type {
+  McpClientInfo,
+  McpTool,
+  McpToolCallResult,
+  McpToolClient,
+  McpHttpClientOptions,
+  McpStdioClientOptions,
+  McpServerOptions,
+  McpServerConfig,
+  McpServerConfigMap,
+  McpServerHttpConfig,
+  McpServersJsonConfig,
+  McpServerStdioConfig,
+} from './agent/mcp.js';

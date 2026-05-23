@@ -12,6 +12,8 @@ import type {
   ToolDefinition,
 } from '../types/types.js';
 import { SdkError } from '../errors/index.js';
+import { createMcpToolSuite } from './mcp.js';
+import type { McpToolClient } from './mcp.js';
 import { validateToolArguments } from './tool-validator.js';
 import type { ValidateFunction } from 'ajv';
 
@@ -114,6 +116,49 @@ export class Agent {
 
     throw new SdkError(`runWithTools exceeded maxIterations=${maxIterations}`);
   }
+
+  async runWithMcpTools(
+    request: ChatRequest,
+    mcpClient: McpToolClient,
+    options?: {
+      handlers?: Record<string, ToolHandler>;
+      maxIterations?: number;
+      signal?: AbortSignal;
+    }
+  ): Promise<RunWithToolsResult> {
+    const mcpSuite = await createMcpToolSuite(mcpClient, options?.signal);
+    const mergedTools = mergeTools(request.tools ?? [], mcpSuite.tools);
+    const mergedHandlers = {
+      ...mcpSuite.handlers,
+      ...(options?.handlers ?? {}),
+    };
+
+    return this.runWithTools(
+      {
+        ...request,
+        tools: mergedTools,
+      },
+      mergedHandlers,
+      {
+        ...(options?.maxIterations !== undefined ? { maxIterations: options.maxIterations } : {}),
+        ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+      }
+    );
+  }
+}
+
+function mergeTools(primaryTools: ToolDefinition[], secondaryTools: ToolDefinition[]): ToolDefinition[] {
+  const merged = new Map<string, ToolDefinition>();
+
+  for (const tool of secondaryTools) {
+    merged.set(tool.name, tool);
+  }
+
+  for (const tool of primaryTools) {
+    merged.set(tool.name, tool);
+  }
+
+  return [...merged.values()];
 }
 
 function parseToolArguments(argumentsJson: string): unknown {
@@ -139,4 +184,3 @@ function serializeToolResult(result: unknown): string {
     throw new SdkError('Tool result is not JSON-serializable', { cause: error });
   }
 }
-
