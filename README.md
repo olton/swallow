@@ -1,6 +1,6 @@
 <div align="center">
 
-  ![Swallow Logo](./assets/logo-blue.png)
+  ![Swallow Logo](assets/logo-blue.png)
 
   # Swallow SDK
   ### Build your agent applications with ease
