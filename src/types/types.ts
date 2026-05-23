@@ -92,8 +92,19 @@ export interface ModelInfo {
   raw?: unknown;
 }
 
+export interface ProviderCapabilities {
+  chat: boolean;
+  stream: boolean;
+  embeddings: boolean;
+  modelListing: boolean;
+  tools: boolean;
+  toolStreaming: boolean;
+  systemMessages: boolean;
+}
+
 export interface LlmProvider {
   readonly id: string;
+  readonly capabilities?: ProviderCapabilities;
   chat(request: ChatRequest, signal?: AbortSignal): Promise<ChatResponse>;
   chatStream(request: ChatRequest, signal?: AbortSignal): AsyncIterable<ChatStreamChunk>;
   embed(request: EmbedRequest, signal?: AbortSignal): Promise<EmbedResponse>;

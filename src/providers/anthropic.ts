@@ -1,6 +1,7 @@
 import { HttpError, ProviderError } from '../errors/index.js';
 import { HttpClient } from '../http/client.js';
 import type { HttpMiddleware, RetryPolicy } from '../http/client.js';
+import { createCapabilities } from './capabilities.js';
 import type {
   ChatRequest,
   ChatResponse,
@@ -48,6 +49,7 @@ interface AnthropicModelsResponse {
 export interface AnthropicProviderOptions {
   baseUrl?: string;
   apiKey?: string;
+  apiVersion?: string;
   anthropicVersion?: string;
   headers?: Record<string, string>;
   fetchFn?: typeof fetch;
@@ -58,12 +60,15 @@ export interface AnthropicProviderOptions {
 
 export class AnthropicProvider implements LlmProvider {
   readonly id = 'anthropic';
+  readonly capabilities = createCapabilities({
+    embeddings: false,
+  });
 
   private readonly client: HttpClient;
 
   constructor(options: AnthropicProviderOptions = {}) {
     const baseUrl = (options.baseUrl ?? 'https://api.anthropic.com').replace(/\/$/, '');
-    const version = options.anthropicVersion ?? '2023-06-01';
+    const version = options.anthropicVersion ?? options.apiVersion ?? '2023-06-01';
 
     const authHeaders = options.apiKey !== undefined ? { 'x-api-key': options.apiKey } : {};
 

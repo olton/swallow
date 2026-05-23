@@ -14,14 +14,55 @@ Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from T
 
 - Provider-agnostic API via `LlmProvider`
 - High-level `AgentClient` facade
+- Unified provider factory: `createProvider(...)`
 - Built-in `OllamaProvider`
 - Built-in `OpenAiCompatibleProvider`
+- Built-in `OpenAiProvider` (native OpenAI)
+- Built-in `AzureOpenAiProvider` (native Azure OpenAI)
+- Built-in `GeminiProvider` (native Gemini API)
 - Built-in `AnthropicProvider`
+- Capability flags on each provider (`provider.capabilities`)
+- OpenAI-compatible vendor profiles/adapters (`openai`, `ollama`, `lmstudio`, `azure-openai`, `custom`)
 - Streaming chat support
 - Embeddings and model listing support
 - Tool-calling orchestration (`runWithTools`)
 - Retry/timeout/middleware support in providers
 - Strict TypeScript-first design
+
+## Quick Start (Unified Factory)
+
+```ts
+import { AgentClient, createProvider } from 'swallow';
+
+const provider = createProvider({
+  provider: 'openai-compatible',
+  profile: 'ollama',
+  baseUrl: 'http://127.0.0.1:11434/v1',
+});
+
+const client = new AgentClient(provider);
+
+const response = await client.chat({
+  model: 'llama3.1',
+  messages: [{ role: 'user', content: 'Say hello in one sentence.' }],
+});
+
+console.log(response.content);
+```
+
+The same API works for all supported providers:
+
+```ts
+const openai = createProvider({ provider: 'openai', apiKey: process.env.OPENAI_API_KEY });
+const anthropic = createProvider({ provider: 'anthropic', apiKey: process.env.ANTHROPIC_API_KEY });
+const gemini = createProvider({ provider: 'gemini', apiKey: process.env.GEMINI_API_KEY });
+const azure = createProvider({
+  provider: 'azure-openai',
+  apiKey: process.env.AZURE_OPENAI_API_KEY,
+  baseUrl: process.env.AZURE_OPENAI_BASE_URL,
+  apiVersion: '2024-10-21',
+});
+```
 
 ## Install
 
@@ -37,9 +78,15 @@ npm test
 npm run test:unit
 npm run test:live
 npm run test:openai
+npm run test:openai:native
 npm run test:anthropic
+npm run test:azure
+npm run test:gemini
 npm run test:live:openai
+npm run test:live:openai:native
 npm run test:live:lmstudio
+npm run test:live:azure
+npm run test:live:gemini
 npm run test:live:all
 npm run build
 npm run demo
@@ -63,11 +110,30 @@ All environment variables used across demo scripts, tests, and provider examples
 - `LMSTUDIO_OPENAI_HOST` - OpenAI-compatible endpoint for LM Studio live test (default: `http://localhost:1234/v1`)
 - `LMSTUDIO_OPENAI_MODEL` - Optional model override for LM Studio live test
 
+### OpenAI Native Provider
+
+- `OPENAI_API_KEY` - API key for `OpenAiProvider`
+- `OPENAI_BASE_URL` - Optional base URL override (default: `https://api.openai.com/v1`)
+- `OPENAI_MODEL` - Optional model override for OpenAI live test
+
 ### Anthropic Provider
 
 - `ANTHROPIC_API_KEY` - API key for `AnthropicProvider`
 - `ANTHROPIC_BASE_URL` - Optional base URL override (default: `https://api.anthropic.com`)
 - `ANTHROPIC_VERSION` - Optional API version header override (provider default: `2023-06-01`)
+
+### Gemini Native Provider
+
+- `GEMINI_API_KEY` - API key for `GeminiProvider`
+- `GEMINI_BASE_URL` - Optional base URL override (default: `https://generativelanguage.googleapis.com`)
+- `GEMINI_MODEL` - Optional model override for Gemini live test (test default: `gemini-2.5-flash`)
+
+### Azure OpenAI Native Provider
+
+- `AZURE_OPENAI_API_KEY` - API key for `AzureOpenAiProvider`
+- `AZURE_OPENAI_BASE_URL` - Azure endpoint, e.g. `https://your-resource.openai.azure.com`
+- `AZURE_OPENAI_DEPLOYMENT` - Deployment name (used as `model` in SDK calls)
+- `AZURE_OPENAI_API_VERSION` - Optional API version override (default: `2024-10-21`)
 
 PowerShell quick setup example:
 
@@ -76,8 +142,46 @@ $env:OLLAMA_HOST="http://localhost:11434"
 $env:OLLAMA_MODEL="gemma4:8b"
 $env:OLLAMA_OPENAI_HOST="http://localhost:11434/v1"
 $env:LMSTUDIO_OPENAI_HOST="http://localhost:1234/v1"
+$env:OPENAI_API_KEY="<your-key>"
 $env:ANTHROPIC_API_KEY="<your-key>"
+$env:GEMINI_API_KEY="<your-key>"
+$env:AZURE_OPENAI_API_KEY="<your-key>"
+$env:AZURE_OPENAI_BASE_URL="https://your-resource.openai.azure.com"
+$env:AZURE_OPENAI_DEPLOYMENT="gpt-4o-mini-prod"
 ```
+
+## Capability Matrix
+
+Every provider exposes `provider.capabilities` so you can check features at runtime.
+
+| Provider | Chat | Stream | Tools | Tool Stream | Embeddings | Model Listing |
+| --- | --- | --- | --- | --- | --- | --- |
+| `OllamaProvider` | Yes | Yes | Yes | No | Yes | Yes |
+| `OpenAiCompatibleProvider` | Yes | Yes | Yes | Yes | Yes | Yes* |
+| `OpenAiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `AzureOpenAiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `AnthropicProvider` | Yes | Yes | Yes | Yes | No | Yes |
+| `GeminiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
+
+`*` OpenAI-compatible model listing depends on selected profile/endpoint support.
+
+## Unified Provider Options
+
+For most providers, options follow the same naming:
+
+- `baseUrl` - provider endpoint
+- `apiKey` - API key (if required)
+- `headers` - extra HTTP headers
+- `timeoutMs` - request timeout
+- `retry` - retry policy
+- `middlewares` - HTTP middleware chain
+
+Provider-specific extras:
+
+- `AnthropicProvider`: `apiVersion` (alias of `anthropicVersion`)
+- `OpenAiCompatibleProvider`: `profile`, `apiVersion` (for Azure profile), optional custom `adapter`
+- `AzureOpenAiProvider`: `apiVersion`
+- `OllamaProvider`: `host` alias for backward compatibility (`baseUrl` is preferred)
 
 ## Public Demo Chat (Ollama)
 
@@ -126,7 +230,7 @@ npm run test:live
 import { AgentClient, OllamaProvider } from 'swallow';
 
 const provider = new OllamaProvider({
-  host: 'http://127.0.0.1:11434',
+  baseUrl: 'http://127.0.0.1:11434',
 });
 
 const client = new AgentClient(provider);
@@ -153,11 +257,15 @@ for await (const chunk of client.stream({
 ## Public API
 
 - `AgentClient`
+- `createProvider`
 - `OllamaProvider`
 - `OpenAiCompatibleProvider`
+- `OpenAiProvider`
+- `AzureOpenAiProvider`
 - `AnthropicProvider`
+- `GeminiProvider`
 - `SdkError`, `ProviderError`, `HttpError`
-- Types: `LlmProvider`, `ChatRequest`, `ChatResponse`, `ChatStreamChunk`, `EmbedRequest`, `EmbedResponse`, `ModelInfo`, `LlmMessage`, `ToolDefinition`, `ToolCall`, `ToolHandler`, `RetryPolicy`, `HttpMiddleware`
+- Types: `LlmProvider`, `ProviderCapabilities`, `ChatRequest`, `ChatResponse`, `ChatStreamChunk`, `EmbedRequest`, `EmbedResponse`, `ModelInfo`, `LlmMessage`, `ToolDefinition`, `ToolCall`, `ToolHandler`, `RetryPolicy`, `HttpMiddleware`
 
 ## Anthropic Provider
 
@@ -196,6 +304,7 @@ import { AgentClient, OpenAiCompatibleProvider } from 'swallow';
 
 const provider = new OpenAiCompatibleProvider({
   baseUrl: 'http://localhost:11434/v1',
+  profile: 'ollama',
   timeoutMs: 20_000,
   retry: { maxAttempts: 3, baseDelayMs: 200 },
   middlewares: [
@@ -213,6 +322,69 @@ const provider = new OpenAiCompatibleProvider({
 });
 
 const client = new AgentClient(provider);
+```
+
+Profiles and adapter behavior:
+
+- `openai` - standard `/v1` OpenAI-style endpoints with `Authorization: Bearer ...`
+- `ollama` - OpenAI-compatible local Ollama endpoints
+- `lmstudio` - OpenAI-compatible LM Studio endpoints
+- `azure-openai` - deployment-based Azure paths + `api-key` header
+- `custom` - custom OpenAI-compatible endpoint (default)
+
+Example for Azure profile through `OpenAiCompatibleProvider`:
+
+```ts
+const provider = new OpenAiCompatibleProvider({
+  profile: 'azure-openai',
+  baseUrl: 'https://your-resource.openai.azure.com',
+  apiKey: process.env.AZURE_OPENAI_API_KEY,
+  apiVersion: '2024-10-21',
+});
+```
+
+## OpenAI Native Provider
+
+```ts
+import { AgentClient, OpenAiProvider } from 'swallow';
+
+const provider = new OpenAiProvider({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const client = new AgentClient(provider);
+```
+
+## Gemini Native Provider
+
+```ts
+import { AgentClient, GeminiProvider } from 'swallow';
+
+const provider = new GeminiProvider({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+const client = new AgentClient(provider);
+```
+
+## Azure OpenAI Native Provider
+
+```ts
+import { AgentClient, AzureOpenAiProvider } from 'swallow';
+
+const provider = new AzureOpenAiProvider({
+  apiKey: process.env.AZURE_OPENAI_API_KEY,
+  baseUrl: process.env.AZURE_OPENAI_BASE_URL,
+  apiVersion: process.env.AZURE_OPENAI_API_VERSION ?? '2024-10-21',
+});
+
+const client = new AgentClient(provider);
+
+// model must be your Azure deployment name
+const response = await client.chat({
+  model: process.env.AZURE_OPENAI_DEPLOYMENT ?? 'your-deployment-name',
+  messages: [{ role: 'user', content: 'Hello from Azure OpenAI' }],
+});
 ```
 
 ## LM Studio (OpenAI-compatible)
@@ -299,7 +471,54 @@ $env:OLLAMA_OPENAI_MODEL="gemma4:8b"
 npm run test:live:openai
 ```
 
+## OpenAI Native Live Test
+
+```bash
+npm run test:live:openai:native
+```
+
+Optional env vars:
+
+```bash
+# PowerShell
+$env:OPENAI_API_KEY="<your-key>"
+$env:OPENAI_MODEL="gpt-4o-mini"
+npm run test:live:openai:native
+```
+
+## Gemini Native Live Test
+
+```bash
+npm run test:live:gemini
+```
+
+Optional env vars:
+
+```bash
+# PowerShell
+$env:GEMINI_API_KEY="<your-key>"
+$env:GEMINI_MODEL="gemini-2.5-flash"
+npm run test:live:gemini
+```
+
+## Azure OpenAI Native Live Test
+
+```bash
+npm run test:live:azure
+```
+
+Required env vars:
+
+```bash
+# PowerShell
+$env:AZURE_OPENAI_API_KEY="<your-key>"
+$env:AZURE_OPENAI_BASE_URL="https://your-resource.openai.azure.com"
+$env:AZURE_OPENAI_DEPLOYMENT="gpt-4o-mini-prod"
+npm run test:live:azure
+```
+
 ## Notes
 
 - Requires Node.js with native `fetch` support.
 - Ollama default host is `http://127.0.0.1:11434`.
+- `OllamaProvider` accepts both `baseUrl` (preferred) and `host` (backward compatible).

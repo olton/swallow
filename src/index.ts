@@ -3,7 +3,11 @@ export { Agent } from './agent/client.js';
 export { HttpError, ProviderError, SdkError } from './errors/index.js';
 export { OllamaProvider } from './providers/ollama.js';
 export { OpenAiCompatibleProvider } from './providers/openai-compatible.js';
+export { OpenAiProvider } from './providers/openai.js';
+export { AzureOpenAiProvider } from './providers/azure-openai.js';
 export { AnthropicProvider } from './providers/anthropic.js';
+export { GeminiProvider } from './providers/gemini.js';
+export { createProvider } from './providers/factory.js';
 export type { HttpMiddleware, HttpMiddlewareContext, RetryPolicy } from './http/client.js';
 export {
   createTelemetryMiddleware,
@@ -19,6 +23,7 @@ export type {
   JsonValue,
   LlmMessage,
   LlmProvider,
+  ProviderCapabilities,
   MessageRole,
   ModelInfo,
   RunWithToolsResult,

@@ -1,6 +1,7 @@
 import { HttpError, ProviderError } from '../errors/index.js';
 import { HttpClient } from '../http/client.js';
 import type { HttpMiddleware, RetryPolicy } from '../http/client.js';
+import { createCapabilities } from './capabilities.js';
 import type {
   ChatRequest,
   ChatResponse,
@@ -44,6 +45,7 @@ interface OllamaTagsResponse {
 }
 
 export interface OllamaProviderOptions {
+  baseUrl?: string;
   host?: string;
   headers?: Record<string, string>;
   fetchFn?: typeof fetch;
@@ -54,11 +56,14 @@ export interface OllamaProviderOptions {
 
 export class OllamaProvider implements LlmProvider {
   readonly id = 'ollama';
+  readonly capabilities = createCapabilities({
+    toolStreaming: false,
+  });
 
   private readonly client: HttpClient;
 
   constructor(options: OllamaProviderOptions = {}) {
-    const baseUrl = (options.host ?? 'http://127.0.0.1:11434').replace(/\/$/, '');
+    const baseUrl = (options.baseUrl ?? options.host ?? 'http://127.0.0.1:11434').replace(/\/$/, '');
     const clientOptions = {
       providerId: this.id,
       baseUrl,
