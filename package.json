@@ -27,7 +27,20 @@
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "sdk",
+    "agent",
+    "llm",
+    "local",
+    "remote",
+    "language model",
+    "openai",
+    "azure",
+    "anthropic",
+    "gemini",
+    "lmstudio",
+    "ollama"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
