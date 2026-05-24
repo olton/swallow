@@ -41,8 +41,11 @@
     "lmstudio",
     "ollama"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Serhii Pimenov",
+    "email": "serhii@pimenov.com.ua"
+  },
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
