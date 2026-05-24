@@ -1,6 +1,6 @@
 <div align="center">
 
-![Swallow SDK Logo](./assets/logo.png)
+![Swallow SDK Logo](./assets/logo-blue.png)
 
 # Swallow SDK
 
