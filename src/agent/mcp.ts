@@ -66,9 +66,7 @@ export interface McpStdioClientOptions {
   spawnFn?: SpawnFn;
 }
 
-export type McpServerOptions =
-  | ({ transport?: 'http' } & McpHttpClientOptions)
-  | ({ transport?: 'stdio' } & McpStdioClientOptions);
+export type McpServerOptions = ({ transport?: 'http' } & McpHttpClientOptions) | ({ transport?: 'stdio' } & McpStdioClientOptions);
 
 export interface McpServerHttpConfig {
   type?: 'http';
@@ -99,8 +97,30 @@ export interface McpServerStdioConfig {
 export type McpServerConfig = McpServerHttpConfig | McpServerStdioConfig;
 export type McpServerConfigMap = Record<string, McpServerConfig>;
 
+export type McpSkillConfig = Record<string, unknown>;
+export type McpAgentConfig = Record<string, unknown>;
+export type McpPromptConfig = string | Record<string, unknown>;
+
+export type McpSkillConfigMap = Record<string, McpSkillConfig>;
+export type McpAgentConfigMap = Record<string, McpAgentConfig>;
+export type McpPromptConfigMap = Record<string, McpPromptConfig>;
+
 export interface McpServersJsonConfig {
   mcpServers: McpServerConfigMap;
+}
+
+export interface McpRuntimeJsonConfig {
+  mcpServers?: McpServerConfigMap;
+  skills?: McpSkillConfigMap;
+  agents?: McpAgentConfigMap;
+  prompts?: McpPromptConfigMap;
+}
+
+export interface McpRuntimeResources {
+  mcpServers: Record<string, McpServer>;
+  skills: McpSkillConfigMap;
+  agents: McpAgentConfigMap;
+  prompts: McpPromptConfigMap;
 }
 
 interface McpListToolsResult {
@@ -186,7 +206,7 @@ class McpHttpClient implements McpToolClient {
         },
         clientInfo: this.clientInfo,
       },
-      signal
+      signal,
     );
 
     this.initialized = true;
@@ -201,7 +221,7 @@ class McpHttpClient implements McpToolClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
+        'Accept': 'application/json',
         ...(this.sessionId !== undefined ? { 'mcp-session-id': this.sessionId } : {}),
         ...this.headers,
       },
@@ -362,7 +382,7 @@ class McpStdioClient implements McpToolClient {
         },
         clientInfo: this.clientInfo,
       },
-      signal
+      signal,
     );
 
     this.initialized = true;
@@ -382,12 +402,12 @@ class McpStdioClient implements McpToolClient {
 
     return new Promise<T>((resolve, reject) => {
       const timeoutId =
-        this.timeoutMs !== undefined
-          ? setTimeout(() => {
-              this.pending.delete(id);
-              reject(new SdkError(`MCP request timed out (${method})`));
-            }, this.timeoutMs)
-          : undefined;
+        this.timeoutMs !== undefined ?
+          setTimeout(() => {
+            this.pending.delete(id);
+            reject(new SdkError(`MCP request timed out (${method})`));
+          }, this.timeoutMs)
+        : undefined;
 
       this.pending.set(id, {
         resolve: (value) => {
@@ -417,7 +437,7 @@ class McpStdioClient implements McpToolClient {
             this.pending.delete(id);
             pending.reject(new SdkError('MCP request aborted'));
           },
-          { once: true }
+          { once: true },
         );
       }
 
@@ -557,10 +577,7 @@ export class McpServer implements McpToolClient {
 
 export function createMcpServerFromConfig(config: McpServerConfig): McpServer;
 export function createMcpServerFromConfig(configMap: McpServerConfigMap, serverName: string): McpServer;
-export function createMcpServerFromConfig(
-  configOrMap: McpServerConfig | McpServerConfigMap,
-  serverName?: string
-): McpServer {
+export function createMcpServerFromConfig(configOrMap: McpServerConfig | McpServerConfigMap, serverName?: string): McpServer {
   const config = resolveServerConfig(configOrMap, serverName);
 
   if (isStdioConfig(config)) {
@@ -621,9 +638,37 @@ export async function createMcpServersFromJsonFile(filePath: string): Promise<Re
   return createMcpServersFromConfig(parsed);
 }
 
+export function createMcpRuntimeFromConfig(config: McpRuntimeJsonConfig): McpRuntimeResources {
+  const normalized = normalizeRuntimeConfig(config);
+
+  return {
+    mcpServers: Object.keys(normalized.mcpServers).length > 0 ? createMcpServersFromConfig(normalized.mcpServers) : {},
+    skills: normalized.skills,
+    agents: normalized.agents,
+    prompts: normalized.prompts,
+  };
+}
+
+export async function createMcpRuntimeFromJsonFile(filePath: string): Promise<McpRuntimeResources> {
+  let parsed: unknown;
+
+  try {
+    const content = await readFile(filePath, 'utf8');
+    parsed = JSON.parse(content) as unknown;
+  } catch (error) {
+    throw new SdkError(`Failed to read MCP runtime config JSON: ${filePath}`, { cause: error });
+  }
+
+  if (!isRuntimeJsonConfigShape(parsed)) {
+    throw new SdkError('Invalid MCP runtime config JSON: expected object with mcpServers/skills/agents/prompts');
+  }
+
+  return createMcpRuntimeFromConfig(parsed);
+}
+
 export async function createMcpToolSuite(
   client: McpToolClient,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<{ tools: ToolDefinition[]; handlers: Record<string, ToolHandler> }> {
   const mcpTools = await client.listTools(signal);
   const handlers: Record<string, ToolHandler> = {};
@@ -722,7 +767,7 @@ function createMergedSignal(signal: AbortSignal | undefined, timeoutMs: number |
         clearTimeout(timeoutId);
         controller.abort();
       },
-      { once: true }
+      { once: true },
     );
   }
 
@@ -731,7 +776,7 @@ function createMergedSignal(signal: AbortSignal | undefined, timeoutMs: number |
     () => {
       clearTimeout(timeoutId);
     },
-    { once: true }
+    { once: true },
   );
 
   return controller.signal;
@@ -837,4 +882,60 @@ function isMcpServersJsonConfig(value: unknown): value is McpServersJsonConfig {
 
   const mcpServers = candidate['mcpServers'];
   return typeof mcpServers === 'object' && mcpServers !== null && !Array.isArray(mcpServers);
+}
+
+function normalizeRuntimeConfig(config: McpRuntimeJsonConfig): {
+  mcpServers: McpServerConfigMap;
+  skills: McpSkillConfigMap;
+  agents: McpAgentConfigMap;
+  prompts: McpPromptConfigMap;
+} {
+  const source = config as Record<string, unknown>;
+
+  const mcpServers = pickRecord(source, ['mcpServers', 'MCPSERVERS']);
+  const skills = pickRecord(source, ['skills', 'SKILLS']);
+  const agents = pickRecord(source, ['agents', 'AGENTS']);
+  const prompts = pickRecord(source, ['prompts', 'PROMPTS']);
+
+  return {
+    mcpServers: (mcpServers ?? {}) as McpServerConfigMap,
+    skills: (skills ?? {}) as McpSkillConfigMap,
+    agents: (agents ?? {}) as McpAgentConfigMap,
+    prompts: (prompts ?? {}) as McpPromptConfigMap,
+  };
+}
+
+function pickRecord(source: Record<string, unknown>, keys: string[]): Record<string, unknown> | undefined {
+  for (const key of keys) {
+    const value = source[key];
+    if (value === undefined) {
+      continue;
+    }
+
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new SdkError(`Invalid runtime config field '${key}': expected object map`);
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  return undefined;
+}
+
+function isRuntimeJsonConfigShape(value: unknown): value is McpRuntimeJsonConfig {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    'mcpServers' in candidate ||
+    'skills' in candidate ||
+    'agents' in candidate ||
+    'prompts' in candidate ||
+    'MCPSERVERS' in candidate ||
+    'SKILLS' in candidate ||
+    'AGENTS' in candidate ||
+    'PROMPTS' in candidate
+  );
 }

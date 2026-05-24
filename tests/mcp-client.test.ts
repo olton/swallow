@@ -8,6 +8,8 @@ import { join } from 'node:path';
 import { Agent } from '../src/agent/client';
 import {
   McpServer,
+  createMcpRuntimeFromConfig,
+  createMcpRuntimeFromJsonFile,
   createMcpServerFromConfig,
   createMcpServersFromConfig,
   createMcpServersFromJsonFile,
@@ -23,7 +25,7 @@ describe('McpServer http transport', () => {
         new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { protocolVersion: '2024-11-05' } }), {
           status: 200,
           headers: { 'Content-Type': 'application/json', 'mcp-session-id': 'session-1' },
-        })
+        }),
       )
       .mockResolvedValueOnce(
         new Response(
@@ -47,8 +49,8 @@ describe('McpServer http transport', () => {
               ],
             },
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(
@@ -59,8 +61,8 @@ describe('McpServer http transport', () => {
               content: [{ type: 'text', text: 'ok' }],
             },
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
       );
 
     const client = new McpServer({
@@ -145,7 +147,7 @@ describe('createMcpServerFromConfig', () => {
           spawnFn,
         },
       },
-      'memory'
+      'memory',
     );
 
     const result = await server.callTool('memory_add', { entity: 'note', value: 'from-map' });
@@ -207,6 +209,64 @@ describe('batch MCP server creation', () => {
   });
 });
 
+describe('runtime config with skills/agents/prompts', () => {
+  it('creates runtime resources from object config', () => {
+    const runtime = createMcpRuntimeFromConfig({
+      skills: {
+        'check-security': {
+          description: 'Identify vulnerabilities',
+          file: './skills/check-security/SKILL.md',
+        },
+      },
+      agents: {
+        Explore: {
+          description: 'Read-only exploration',
+        },
+      },
+      prompts: {
+        standup: 'Generate standup summary from session logs',
+      },
+    });
+
+    expect(Object.keys(runtime.mcpServers)).toHaveLength(0);
+    expect(runtime.skills['check-security']?.['description']).toBe('Identify vulnerabilities');
+    expect(runtime.agents['Explore']?.['description']).toBe('Read-only exploration');
+    expect(runtime.prompts['standup']).toBe('Generate standup summary from session logs');
+  });
+
+  it('loads runtime resources from JSON file with uppercase sections', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'swallow-runtime-'));
+    const filePath = join(tempDir, 'runtime.json');
+
+    try {
+      const fileConfig = {
+        SKILLS: {
+          refactoring: {
+            description: 'Refactor function readability',
+          },
+        },
+        AGENTS: {
+          Explore: {
+            description: 'Fast repo exploration',
+          },
+        },
+        PROMPTS: {
+          triage: 'Summarize open defects by severity',
+        },
+      };
+
+      await writeFile(filePath, JSON.stringify(fileConfig), 'utf8');
+
+      const runtime = await createMcpRuntimeFromJsonFile(filePath);
+      expect(runtime.skills['refactoring']?.['description']).toBe('Refactor function readability');
+      expect(runtime.agents['Explore']?.['description']).toBe('Fast repo exploration');
+      expect(runtime.prompts['triage']).toBe('Summarize open defects by severity');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('Agent.runWithMcpTools', () => {
   it('runs tool loop using MCP tools', async () => {
     const provider: LlmProvider = {
@@ -261,7 +321,7 @@ describe('Agent.runWithMcpTools', () => {
         model: 'm',
         messages: [{ role: 'user', content: 'find docs' }],
       },
-      mcpClient
+      mcpClient,
     );
 
     expect(result.final.content).toBe('done');
@@ -291,7 +351,10 @@ describe('Agent.runWithMcpTools', () => {
     expect(suite.tools[0]?.name).toBe('context7_query');
 
     const handler = suite.handlers['context7_query'];
-    const response = await handler({ libraryId: '/x/y', query: 'z' }, { call: { id: '1', name: 'context7_query', argumentsJson: '{}', type: 'function' }, iteration: 1 });
+    const response = await handler(
+      { libraryId: '/x/y', query: 'z' },
+      { call: { id: '1', name: 'context7_query', argumentsJson: '{}', type: 'function' }, iteration: 1 },
+    );
     expect(response).toBe('doc text');
   });
 });
@@ -345,26 +408,25 @@ function createFakeMcpProcess() {
       };
 
       const result =
-        request.method === 'tools/list'
-          ? {
-              tools: [
-                {
-                  name: 'memory_add',
-                  description: 'Add observation',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      entity: { type: 'string' },
-                      value: { type: 'string' },
-                    },
-                    required: ['entity', 'value'],
+        request.method === 'tools/list' ?
+          {
+            tools: [
+              {
+                name: 'memory_add',
+                description: 'Add observation',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    entity: { type: 'string' },
+                    value: { type: 'string' },
                   },
+                  required: ['entity', 'value'],
                 },
-              ],
-            }
-          : request.method === 'tools/call'
-            ? { content: [{ type: 'text', text: 'saved' }] }
-            : { protocolVersion: '2024-11-05' };
+              },
+            ],
+          }
+        : request.method === 'tools/call' ? { content: [{ type: 'text', text: 'saved' }] }
+        : { protocolVersion: '2024-11-05' };
 
       const responseBody = JSON.stringify({
         jsonrpc: '2.0',

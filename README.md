@@ -1,14 +1,14 @@
 <div align="center">
 
-  ![Swallow SDK Logo](./assets/logo-blue.png)
+![Swallow SDK Logo](./assets/logo-blue.png)
 
-  # Swallow SDK
-  ### Build your agent applications with ease
+# Swallow SDK
+
+### Build your agent applications with ease
 
 Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from TypeScript/JavaScript.
 
 </div>
-
 
 ## Features
 
@@ -100,7 +100,10 @@ All environment variables used across demo scripts, tests, and provider examples
 
 - `DEMO_HOST` - Demo server bind host for `npm run demo` (default: `127.0.0.1`)
 - `DEMO_PORT` - Demo server bind port for `npm run demo` (default: `5177`)
+- `DEMO_PROVIDER` - Default provider for demo requests when `provider` is not passed (default: `ollama`)
 - `OLLAMA_HOST` - Native Ollama API host used by demo and `npm run test:live` (default: `http://localhost:11434`)
+- `OPENAI_COMPATIBLE_BASE_URL` - Optional base URL for demo page `openai-compatible`
+- `OPENAI_COMPATIBLE_API_KEY` - Optional API key for demo page `openai-compatible`
 
 ### Live Tests
 
@@ -154,14 +157,14 @@ $env:AZURE_OPENAI_DEPLOYMENT="gpt-4o-mini-prod"
 
 Every provider exposes `provider.capabilities` so you can check features at runtime.
 
-| Provider | Chat | Stream | Tools | Tool Stream | Embeddings | Model Listing |
-| --- | --- | --- | --- | --- | --- | --- |
-| `OllamaProvider` | Yes | Yes | Yes | No | Yes | Yes |
-| `OpenAiCompatibleProvider` | Yes | Yes | Yes | Yes | Yes | Yes* |
-| `OpenAiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
-| `AzureOpenAiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
-| `AnthropicProvider` | Yes | Yes | Yes | Yes | No | Yes |
-| `GeminiProvider` | Yes | Yes | Yes | Yes | Yes | Yes |
+| Provider                   | Chat | Stream | Tools | Tool Stream | Embeddings | Model Listing |
+| -------------------------- | ---- | ------ | ----- | ----------- | ---------- | ------------- |
+| `OllamaProvider`           | Yes  | Yes    | Yes   | No          | Yes        | Yes           |
+| `OpenAiCompatibleProvider` | Yes  | Yes    | Yes   | Yes         | Yes        | Yes\*         |
+| `OpenAiProvider`           | Yes  | Yes    | Yes   | Yes         | Yes        | Yes           |
+| `AzureOpenAiProvider`      | Yes  | Yes    | Yes   | Yes         | Yes        | Yes           |
+| `AnthropicProvider`        | Yes  | Yes    | Yes   | Yes         | No         | Yes           |
+| `GeminiProvider`           | Yes  | Yes    | Yes   | Yes         | Yes        | Yes           |
 
 `*` OpenAI-compatible model listing depends on selected profile/endpoint support.
 
@@ -183,25 +186,38 @@ Provider-specific extras:
 - `AzureOpenAiProvider`: `apiVersion`
 - `OllamaProvider`: `host` alias for backward compatibility (`baseUrl` is preferred)
 
-## Public Demo Chat (Ollama)
+## Public Demo Chat (All Providers)
 
-Launch a local demo chat UI from `public/` powered by the SDK (`Agent` + `OllamaProvider`).
+Launch a local demo UI from `public/` powered by the SDK (`Agent`) with runtime provider switching.
 
 ```bash
 npm run demo
 ```
 
-Then open:
+Then open launcher page:
 
 ```text
 http://127.0.0.1:5177
 ```
 
+Available demo pages:
+
+- `Ollama`
+- `OpenAI-compatible`
+- `OpenAI Native`
+- `Azure OpenAI`
+- `Anthropic`
+- `Gemini`
+
+Each page sends `provider` to the demo backend so you can test different providers without restarting the server.
+
 Optional environment variables:
 
 ```bash
 # PowerShell
+$env:DEMO_PROVIDER="ollama"
 $env:OLLAMA_HOST="http://localhost:11434"
+$env:OPENAI_COMPATIBLE_BASE_URL="http://localhost:11434/v1"
 $env:DEMO_HOST="127.0.0.1"
 $env:DEMO_PORT="5177"
 npm run demo
@@ -450,7 +466,7 @@ const result = await client.runWithTools(
       const city = (args as { city?: string }).city ?? 'Unknown';
       return { city, tempC: 21, condition: 'clear' };
     },
-  }
+  },
 );
 
 console.log(result.final.content);
@@ -472,9 +488,7 @@ const mcp = new McpServer({
   // Your MCP HTTP endpoint
   baseUrl: process.env.MCP_SERVER_URL ?? 'https://your-mcp-server.example.com/mcp',
   headers: {
-    ...(process.env.MCP_BEARER_TOKEN
-      ? { Authorization: `Bearer ${process.env.MCP_BEARER_TOKEN}` }
-      : {}),
+    ...(process.env.MCP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.MCP_BEARER_TOKEN}` } : {}),
   },
 });
 
@@ -491,7 +505,7 @@ const result = await agent.runWithMcpTools(
     ],
     toolChoice: 'auto',
   },
-  mcp
+  mcp,
 );
 
 console.log(result.final.content);
@@ -519,7 +533,7 @@ await agent.runWithMcpTools(
     handlers: {
       localUtility: async () => ({ ok: true }),
     },
-  }
+  },
 );
 ```
 
@@ -546,7 +560,7 @@ const result = await agent.runWithMcpTools(
     messages: [{ role: 'user', content: 'Save and read notes from memory MCP' }],
     toolChoice: 'auto',
   },
-  mcp
+  mcp,
 );
 
 console.log(result.final.content);
@@ -581,7 +595,7 @@ const result = await agent.runWithMcpTools(
     messages: [{ role: 'user', content: 'Save note using memory MCP' }],
     toolChoice: 'auto',
   },
-  mcp
+  mcp,
 );
 
 console.log(result.final.content);
@@ -645,6 +659,73 @@ import { createMcpServersFromJsonFile } from 'swallow';
 const servers = await createMcpServersFromJsonFile('./mcp.config.json');
 const memory = servers.memory;
 ```
+
+### Runtime Config: SKILLS, AGENTS, PROMPTS
+
+You can load `mcpServers`, `skills`, `agents`, and `prompts` in one runtime config.
+
+Quick usage (short):
+
+1. Put your maps into config sections: `skills`, `agents`, `prompts`.
+2. Load runtime once via `createMcpRuntimeFromConfig(...)` or `createMcpRuntimeFromJsonFile(...)`.
+3. Access resources from `runtime.skills`, `runtime.agents`, `runtime.prompts`.
+
+```ts
+import { createMcpRuntimeFromConfig } from 'swallow';
+
+const runtime = createMcpRuntimeFromConfig({
+  skills: { 'check-security': { file: './skills/check-security/SKILL.md' } },
+  agents: { Explore: { description: 'Fast repo exploration' } },
+  prompts: { triage: 'Summarize open defects by severity' },
+});
+
+const skill = runtime.skills['check-security'];
+const agent = runtime.agents.Explore;
+const prompt = runtime.prompts.triage;
+```
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "autoStart": true
+    }
+  },
+  "skills": {
+    "check-security": {
+      "description": "Identify vulnerabilities",
+      "file": "./skills/check-security/SKILL.md"
+    }
+  },
+  "agents": {
+    "Explore": {
+      "description": "Fast read-only exploration"
+    }
+  },
+  "prompts": {
+    "triage": "Summarize open defects by severity"
+  }
+}
+```
+
+```ts
+import { createMcpRuntimeFromJsonFile } from 'swallow';
+
+const runtime = await createMcpRuntimeFromJsonFile('./runtime.config.json');
+
+const memoryServer = runtime.mcpServers.memory;
+const skill = runtime.skills['check-security'];
+const agent = runtime.agents.Explore;
+const prompt = runtime.prompts.triage;
+```
+
+Notes:
+
+- `createMcpRuntimeFromConfig(...)` accepts object config directly.
+- `createMcpRuntimeFromJsonFile(...)` reads JSON file.
+- Uppercase sections are also supported: `SKILLS`, `AGENTS`, `PROMPTS`.
 
 ## OpenAI-compatible Live Test (local Ollama)
 

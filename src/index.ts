@@ -2,6 +2,8 @@ export { Agent as AgentClient } from './agent/client.js';
 export { Agent } from './agent/client.js';
 export {
   McpServer,
+  createMcpRuntimeFromConfig,
+  createMcpRuntimeFromJsonFile,
   createMcpServerFromConfig,
   createMcpServersFromConfig,
   createMcpServersFromJsonFile,
@@ -50,6 +52,14 @@ export type {
   McpServerConfig,
   McpServerConfigMap,
   McpServerHttpConfig,
+  McpRuntimeJsonConfig,
+  McpRuntimeResources,
+  McpSkillConfig,
+  McpAgentConfig,
+  McpPromptConfig,
+  McpSkillConfigMap,
+  McpAgentConfigMap,
+  McpPromptConfigMap,
   McpServersJsonConfig,
   McpServerStdioConfig,
 } from './agent/mcp.js';
