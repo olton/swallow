@@ -24,10 +24,10 @@ const agent = new Agent(provider);
 ## Спосіб 2: через єдину фабрику
 
 ```ts
-import { Agent, createProvider } from 'swallow';
+import { Agent, ProviderType, createProvider } from 'swallow';
 
 const provider = createProvider({
-  provider: 'openai-compatible',
+  provider: ProviderType.OpenAiCompatible,
   profile: 'ollama',
   baseUrl: 'http://127.0.0.1:11434/v1',
 });
@@ -47,7 +47,7 @@ const agent = new Agent(provider);
 
 ```ts
 createProvider({
-  provider: 'ollama',
+  provider: ProviderType.Ollama,
   baseUrl: process.env.OLLAMA_HOST,
 });
 ```
@@ -56,7 +56,7 @@ createProvider({
 
 ```ts
 createProvider({
-  provider: 'openai',
+  provider: ProviderType.OpenAi,
   apiKey: process.env.OPENAI_API_KEY,
   baseUrl: process.env.OPENAI_BASE_URL,
 });
@@ -66,7 +66,7 @@ createProvider({
 
 ```ts
 createProvider({
-  provider: 'azure-openai',
+  provider: ProviderType.AzureOpenAi,
   apiKey: process.env.AZURE_OPENAI_API_KEY,
   baseUrl: process.env.AZURE_OPENAI_BASE_URL,
   apiVersion: process.env.AZURE_OPENAI_API_VERSION,
@@ -77,7 +77,7 @@ createProvider({
 
 ```ts
 createProvider({
-  provider: 'anthropic',
+  provider: ProviderType.Anthropic,
   apiKey: process.env.ANTHROPIC_API_KEY,
   baseUrl: process.env.ANTHROPIC_BASE_URL,
   apiVersion: process.env.ANTHROPIC_VERSION,
@@ -88,7 +88,7 @@ createProvider({
 
 ```ts
 createProvider({
-  provider: 'gemini',
+  provider: ProviderType.Gemini,
   apiKey: process.env.GEMINI_API_KEY,
   baseUrl: process.env.GEMINI_BASE_URL,
 });

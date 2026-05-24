@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createProvider } from '../src/providers';
+import { ProviderType, createProvider } from '../src/providers';
 
 describe('createProvider', () => {
   it('creates all supported providers', () => {
     const fetchFn = vi.fn(async () => new Response('{}', { status: 200 }));
 
     const providers = [
-      createProvider({ provider: 'ollama', fetchFn }),
-      createProvider({ provider: 'openai-compatible', fetchFn }),
-      createProvider({ provider: 'openai', fetchFn }),
-      createProvider({ provider: 'anthropic', fetchFn }),
-      createProvider({ provider: 'gemini', fetchFn }),
-      createProvider({ provider: 'azure-openai', fetchFn }),
+      createProvider({ provider: ProviderType.Ollama, fetchFn }),
+      createProvider({ provider: ProviderType.OpenAiCompatible, fetchFn }),
+      createProvider({ provider: ProviderType.OpenAi, fetchFn }),
+      createProvider({ provider: ProviderType.Anthropic, fetchFn }),
+      createProvider({ provider: ProviderType.Gemini, fetchFn }),
+      createProvider({ provider: ProviderType.AzureOpenAi, fetchFn }),
     ];
 
     expect(providers.map((provider) => provider.id)).toEqual([

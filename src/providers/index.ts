@@ -12,27 +12,36 @@ import type { OllamaProviderOptions } from './ollama.js';
 import type { OpenAiCompatibleProviderOptions } from './openai-compatible.js';
 import type { OpenAiProviderOptions } from './openai.js';
 
+export enum ProviderType {
+  Ollama = 'ollama',
+  OpenAiCompatible = 'openai-compatible',
+  OpenAi = 'openai',
+  Anthropic = 'anthropic',
+  Gemini = 'gemini',
+  AzureOpenAi = 'azure-openai',
+}
+
 export type ProviderFactoryConfig =
-  | ({ provider: 'ollama' } & OllamaProviderOptions)
-  | ({ provider: 'openai-compatible' } & OpenAiCompatibleProviderOptions)
-  | ({ provider: 'openai' } & OpenAiProviderOptions)
-  | ({ provider: 'anthropic' } & AnthropicProviderOptions)
-  | ({ provider: 'gemini' } & GeminiProviderOptions)
-  | ({ provider: 'azure-openai' } & AzureOpenAiProviderOptions);
+  | ({ provider: ProviderType.Ollama } & OllamaProviderOptions)
+  | ({ provider: ProviderType.OpenAiCompatible } & OpenAiCompatibleProviderOptions)
+  | ({ provider: ProviderType.OpenAi } & OpenAiProviderOptions)
+  | ({ provider: ProviderType.Anthropic } & AnthropicProviderOptions)
+  | ({ provider: ProviderType.Gemini } & GeminiProviderOptions)
+  | ({ provider: ProviderType.AzureOpenAi } & AzureOpenAiProviderOptions);
 
 export function createProvider(config: ProviderFactoryConfig): LlmProvider {
   switch (config.provider) {
-    case 'ollama':
+    case ProviderType.Ollama:
       return new OllamaProvider(config);
-    case 'openai-compatible':
+    case ProviderType.OpenAiCompatible:
       return new OpenAiCompatibleProvider(config);
-    case 'openai':
+    case ProviderType.OpenAi:
       return new OpenAiProvider(config);
-    case 'anthropic':
+    case ProviderType.Anthropic:
       return new AnthropicProvider(config);
-    case 'gemini':
+    case ProviderType.Gemini:
       return new GeminiProvider(config);
-    case 'azure-openai':
+    case ProviderType.AzureOpenAi:
       return new AzureOpenAiProvider(config);
     default:
       return assertNever(config);

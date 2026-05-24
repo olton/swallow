@@ -32,22 +32,49 @@ Swallow SDK is a lightweight Agent SDK for interacting with LLM providers from T
 ## Quick Start (Unified Factory)
 
 ```ts
-import { AgentClient, createProvider } from 'swallow';
+import { AgentClient, ProviderType, createProvider, type ChatRequest } from 'swallow';
 
 const provider = createProvider({
-  provider: 'openai-compatible',
+  provider: ProviderType.OpenAiCompatible,
   profile: 'ollama',
   baseUrl: 'http://127.0.0.1:11434/v1',
 });
 
 const client = new AgentClient(provider);
 
-const response = await client.chat({
+const request: ChatRequest = {
   model: 'llama3.1',
   messages: [{ role: 'user', content: 'Say hello in one sentence.' }],
-});
+};
+
+const response = await client.chat(request);
 
 console.log(response.content);
+```
+
+## SDK Imports Guide
+
+Use these imports based on your scenario:
+
+- `AgentClient` (alias: `Agent`) - Main high-level API for `chat`, `stream`, `embed`, `listModels`, `runWithTools`, and `runWithMcpTools`.
+- `createProvider` - Unified provider factory.
+- `ProviderType` - Enum for safe provider selection in `createProvider(...)`.
+- `OllamaProvider`, `OpenAiProvider`, `AzureOpenAiProvider`, `AnthropicProvider`, `GeminiProvider`, `OpenAiCompatibleProvider` - Direct provider classes when you want provider-specific setup.
+- `McpServer` and MCP helpers - For external MCP servers and runtime loading from config/json.
+- `SdkError`, `ProviderError`, `HttpError` - Typed error handling.
+- Type-only imports (for TypeScript) - `LlmMessage`, `ChatRequest`, `ToolDefinition`, `ToolHandler`, etc.
+
+Most common import set:
+
+```ts
+import { AgentClient, ProviderType, createProvider } from 'swallow';
+```
+
+Type-safe import set (TS-heavy projects):
+
+```ts
+import { AgentClient, ProviderType, createProvider } from 'swallow';
+import type { ChatRequest, LlmMessage, ToolDefinition, ToolHandler } from 'swallow';
 ```
 
 ## How To Add Messages
@@ -55,10 +82,10 @@ console.log(response.content);
 Use `messages` as conversation history. Send all previous turns on each request.
 
 ```ts
-import { AgentClient, createProvider, type LlmMessage } from 'swallow';
+import { AgentClient, ProviderType, createProvider, type ChatRequest, type LlmMessage } from 'swallow';
 
 const provider = createProvider({
-  provider: 'openai-compatible',
+  provider: ProviderType.OpenAiCompatible,
   profile: 'ollama',
   baseUrl: 'http://127.0.0.1:11434/v1',
 });
@@ -70,10 +97,12 @@ const messages: LlmMessage[] = [{ role: 'system', content: 'You are a concise as
 async function sendUserMessage(text: string): Promise<string> {
   messages.push({ role: 'user', content: text });
 
-  const response = await client.chat({
+  const request: ChatRequest = {
     model: 'llama3.1',
     messages,
-  });
+  };
+
+  const response = await client.chat(request);
 
   messages.push({ role: 'assistant', content: response.content });
   return response.content;
@@ -92,11 +121,11 @@ Roles you can use in `messages`:
 The same API works for all supported providers:
 
 ```ts
-const openai = createProvider({ provider: 'openai', apiKey: process.env.OPENAI_API_KEY });
-const anthropic = createProvider({ provider: 'anthropic', apiKey: process.env.ANTHROPIC_API_KEY });
-const gemini = createProvider({ provider: 'gemini', apiKey: process.env.GEMINI_API_KEY });
+const openai = createProvider({ provider: ProviderType.OpenAi, apiKey: process.env.OPENAI_API_KEY });
+const anthropic = createProvider({ provider: ProviderType.Anthropic, apiKey: process.env.ANTHROPIC_API_KEY });
+const gemini = createProvider({ provider: ProviderType.Gemini, apiKey: process.env.GEMINI_API_KEY });
 const azure = createProvider({
-  provider: 'azure-openai',
+  provider: ProviderType.AzureOpenAi,
   apiKey: process.env.AZURE_OPENAI_API_KEY,
   baseUrl: process.env.AZURE_OPENAI_BASE_URL,
   apiVersion: '2024-10-21',
@@ -313,6 +342,7 @@ for await (const chunk of client.stream({
 
 - `AgentClient`
 - `createProvider`
+- `ProviderType`
 - `OllamaProvider`
 - `OpenAiCompatibleProvider`
 - `OpenAiProvider`
@@ -320,7 +350,7 @@ for await (const chunk of client.stream({
 - `AnthropicProvider`
 - `GeminiProvider`
 - `SdkError`, `ProviderError`, `HttpError`
-- Types: `LlmProvider`, `ProviderCapabilities`, `ChatRequest`, `ChatResponse`, `ChatStreamChunk`, `EmbedRequest`, `EmbedResponse`, `ModelInfo`, `LlmMessage`, `ToolDefinition`, `ToolCall`, `ToolHandler`, `RetryPolicy`, `HttpMiddleware`
+- Types: `ProviderFactoryConfig`, `LlmProvider`, `ProviderCapabilities`, `ChatRequest`, `ChatResponse`, `ChatStreamChunk`, `EmbedRequest`, `EmbedResponse`, `ModelInfo`, `LlmMessage`, `ToolDefinition`, `ToolCall`, `ToolHandler`, `RetryPolicy`, `HttpMiddleware`
 
 ## Anthropic Provider
 
@@ -481,32 +511,37 @@ npm run test:live:lmstudio
 ## Tool Calling API
 
 ```ts
-const result = await client.runWithTools(
+import { type ChatRequest, type ToolDefinition, type ToolHandler } from 'swallow';
+
+const tools: ToolDefinition[] = [
   {
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: 'What is the weather in Kyiv?' }],
-    tools: [
-      {
-        name: 'getWeather',
-        description: 'Get weather by city',
-        parameters: {
-          type: 'object',
-          properties: {
-            city: { type: 'string' },
-          },
-          required: ['city'],
-        },
+    name: 'getWeather',
+    description: 'Get weather by city',
+    parameters: {
+      type: 'object',
+      properties: {
+        city: { type: 'string' },
       },
-    ],
-    toolChoice: 'auto',
-  },
-  {
-    getWeather: async (args) => {
-      const city = (args as { city?: string }).city ?? 'Unknown';
-      return { city, tempC: 21, condition: 'clear' };
+      required: ['city'],
     },
   },
-);
+];
+
+const request: ChatRequest = {
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: 'What is the weather in Kyiv?' }],
+  tools,
+  toolChoice: 'auto',
+};
+
+const handlers: Record<string, ToolHandler> = {
+  getWeather: async (args) => {
+    const city = (args as { city?: string }).city ?? 'Unknown';
+    return { city, tempC: 21, condition: 'clear' };
+  },
+};
+
+const result = await client.runWithTools(request, handlers);
 
 console.log(result.final.content);
 ```
