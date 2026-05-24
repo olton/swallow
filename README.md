@@ -50,6 +50,45 @@ const response = await client.chat({
 console.log(response.content);
 ```
 
+## How To Add Messages
+
+Use `messages` as conversation history. Send all previous turns on each request.
+
+```ts
+import { AgentClient, createProvider, type LlmMessage } from 'swallow';
+
+const provider = createProvider({
+  provider: 'openai-compatible',
+  profile: 'ollama',
+  baseUrl: 'http://127.0.0.1:11434/v1',
+});
+
+const client = new AgentClient(provider);
+
+const messages: LlmMessage[] = [{ role: 'system', content: 'You are a concise assistant for release notes.' }];
+
+async function sendUserMessage(text: string): Promise<string> {
+  messages.push({ role: 'user', content: text });
+
+  const response = await client.chat({
+    model: 'llama3.1',
+    messages,
+  });
+
+  messages.push({ role: 'assistant', content: response.content });
+  return response.content;
+}
+
+await sendUserMessage('Create a short release note for version 1.2.0');
+await sendUserMessage('Now make it more formal and add one risk line');
+```
+
+Roles you can use in `messages`:
+
+- `system`: global instruction for model behavior.
+- `user`: end-user input.
+- `assistant`: previous model answers (for multi-turn context).
+
 The same API works for all supported providers:
 
 ```ts
